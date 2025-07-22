@@ -30,8 +30,8 @@
 (map! "M-g o" #'consult-outline)
 (map! "M-o" #'other-window)
 (map! "C-x ;" #'comment-line)
-(map! "C-x k" #'ill-current-buffer)
-
+(map! "C-x k" #'kill-current-buffer)
+(map! "C-c olc" #'claude-code)
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
 ;; refresh your font settings. If Emacs still can't find your font, it likely
@@ -185,6 +185,49 @@
 
 (use-package! claude-code
   :config
-  :config
   (claude-code-mode)
+  )
+
+
+(after! lsp-java
+  ;; Point lsp-java to the Eclipse XML formatter file.
+  ;; We use `doom-private-dir` to locate `~/.doom.d/` correctly.
+  (setq lsp-java-format-settings-url
+        (expand-file-name "eclipse.format.xml" doom-user-dir))
+
+  (require 'lsp-java-boot)
+
+  ;; to enable the lenses
+  (add-hook 'lsp-mode-hook #'lsp-lens-mode)
+  (add-hook 'java-mode-hook #'lsp-java-boot-lens-mode)
+  )
+
+
+;; in ~/.doom.d/config.el
+(use-package! projectile
+  :config
+  (add-to-list 'projectile-globally-ignored-files "*.class")
+  (add-to-list 'projectile-globally-ignored-file-suffixes " .class")
+  (add-to-list 'projectile-globally-ignored-directories "bin")
+  (setq projectile-project-search-path '("~/.workspace/repos/"))
+  )
+
+(use-package! good-scroll
+  :hook (doom-first-input . good-scroll-mode)
+  :config
+  (defun good-scroll--convert-line-to-step (line)
+    (cl-typecase line
+      (integer (* line (line-pixel-height)))
+      ((or null (member -))
+       (- (good-scroll--window-usable-height)
+          (* next-screen-context-lines (line-pixel-height))))
+      (t (line-pixel-height))))
+
+  (defadvice! good-scroll--scroll-up (&optional arg)
+    :override 'scroll-up
+    (good-scroll-move (good-scroll--convert-line-to-step arg)))
+
+  (defadvice! good-scroll--scroll-down (&optional arg)
+    :override 'scroll-down
+    (good-scroll-move (- (good-scroll--convert-line-to-step arg))))
   )
